@@ -76,27 +76,29 @@ if uploaded_file:
     kpi3.metric("Throughput Efficiency", f"{throughput*100:.1f}%")
     kpi4.metric("Total Risk Value", f"${total_cost:,.2f}")
 
-    # --- NUEVA SECCIÓN: SPLIT POR BONEPILE CATEGORY ---
+    # --- NUEVA SECCIÓN CORREGIDA: SPLIT POR BONEPILE_CATEGORY ---
     st.markdown("---")
     st.subheader("🗂️ Distribución por Categoría de Falla (Bonepile Category)")
     
-    if "Bonepile category" in df_bp.columns:
-        # Agrupar y calcular métricas clave por categoría
-        df_split = df_bp.groupby("Bonepile category").agg(
+    if "bonepile_category" in df_bp.columns:
+        # Agrupar usando el nombre exacto de la columna en minúsculas
+        df_split = df_bp.groupby("bonepile_category").agg(
             Unidades=("sernum", "count"),
             Promedio_Aging=("bonepile_aging_days", "mean"),
             Costo_Total_USD=("quoted_cost", "sum")
         ).reset_index()
         
-        # Redondear y formatear para visualización ejecutiva
+        # Formatear la salida para los directores
         df_split["Promedio_Aging"] = df_split["Promedio_Aging"].round(1).astype(str) + " días"
         df_split["Costo_Total_USD"] = df_split["Costo_Total_USD"].map("${:,.2f}".format)
         df_split = df_split.sort_values(by="Unidades", ascending=False).reset_index(drop=True)
         
-        # Mostrar tabla expandida ocupando el ancho completo
+        # Renombrar columnas finales de la tabla para reporte ejecutivo
+        df_split.columns = ["Categoría Bonepile", "Total Unidades", "Aging Promedio", "Costo Total Retenido (USD)"]
+        
         st.dataframe(df_split, use_container_width=True)
     else:
-        st.warning("⚠️ No se encontró la columna 'Bonepile category' en el archivo cargado. Verifica el formato del Excel.")
+        st.warning("⚠️ No se encontró la columna 'bonepile_category' en el archivo cargado. Asegúrate de que el Excel contenga esa columna exacta.")
 
     st.markdown("---")
     st.markdown("### 🚨 Zona de Riesgo Crítico (> 120 Días Target Cliente)")
