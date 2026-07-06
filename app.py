@@ -63,7 +63,6 @@ if uploaded_file:
         "Total_Risk_USD": total_cost
     }])
     
-    # Unir datos nuevos con el archivo viejo evitando duplicar el mismo día
     if not df_historico_master.empty:
         df_historico_master = df_historico_master[df_historico_master["Fecha"] != fecha_reporte]
     
@@ -76,6 +75,28 @@ if uploaded_file:
     kpi2.metric("Average Aging", f"{avg_aging} días")
     kpi3.metric("Throughput Efficiency", f"{throughput*100:.1f}%")
     kpi4.metric("Total Risk Value", f"${total_cost:,.2f}")
+
+    # --- NUEVA SECCIÓN: SPLIT POR BONEPILE CATEGORY ---
+    st.markdown("---")
+    st.subheader("🗂️ Distribución por Categoría de Falla (Bonepile Category)")
+    
+    if "Bonepile category" in df_bp.columns:
+        # Agrupar y calcular métricas clave por categoría
+        df_split = df_bp.groupby("Bonepile category").agg(
+            Unidades=("sernum", "count"),
+            Promedio_Aging=("bonepile_aging_days", "mean"),
+            Costo_Total_USD=("quoted_cost", "sum")
+        ).reset_index()
+        
+        # Redondear y formatear para visualización ejecutiva
+        df_split["Promedio_Aging"] = df_split["Promedio_Aging"].round(1).astype(str) + " días"
+        df_split["Costo_Total_USD"] = df_split["Costo_Total_USD"].map("${:,.2f}".format)
+        df_split = df_split.sort_values(by="Unidades", ascending=False).reset_index(drop=True)
+        
+        # Mostrar tabla expandida ocupando el ancho completo
+        st.dataframe(df_split, use_container_width=True)
+    else:
+        st.warning("⚠️ No se encontró la columna 'Bonepile category' en el archivo cargado. Verifica el formato del Excel.")
 
     st.markdown("---")
     st.markdown("### 🚨 Zona de Riesgo Crítico (> 120 Días Target Cliente)")
